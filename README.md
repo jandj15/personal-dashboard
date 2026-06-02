@@ -7,6 +7,14 @@ extras let a Telegram voice note, your Google Calendar/Gmail, and Apple Health f
 This guide is written for **non-technical** people. No coding — you'll create three free
 accounts, copy-paste a few times, and click **Deploy**. About **15–20 minutes**.
 
+> **Two ways to set this up:**
+> **(A) No coding — recommended.** Follow the steps below: copy the project, set up the
+> database, and deploy in the browser. You never open a terminal.
+> **(B) Developers (advanced).** Run it on your own machine — this **requires installing
+> [Node.js](https://nodejs.org) and [Git](https://git-scm.com)** and cloning the repo first.
+> Typing `npm install` on its own does nothing useful until you've done that — see
+> [*For developers*](#for-developers--run-on-your-own-computer-advanced) at the end.
+
 **[🇬🇧 English](#english) · [🇪🇸 Español](#español)**
 
 ---
@@ -96,13 +104,27 @@ Only paste the `service_role` key and your passwords into **Vercel's Environment
 Never put them in the code or anywhere public. Your forked repo can be public — it contains
 no secrets.
 
-### For developers — run on your own computer (optional)
+### For developers — run on your own computer (advanced)
 
-Requires Node.js 18+. Copy `.env.example` to `.env.local` and fill it in, then:
+> Not needed if you used the Vercel steps above. This path is for developers. The commands
+> below **only work after** you have installed the prerequisites and cloned the repo — running
+> `npm install` by itself, without Node.js + the cloned project, will do nothing.
+
+**Prerequisites:** install [Node.js](https://nodejs.org) 18+ and [Git](https://git-scm.com).
 
 ```bash
+# 1. Clone YOUR fork (replace YOUR-USERNAME), then enter the folder
+git clone https://github.com/YOUR-USERNAME/personal-dashboard.git
+cd personal-dashboard
+
+# 2. Install dependencies (needs Node.js from the prerequisites)
 npm install
-npm run dev      # http://localhost:3000
+
+# 3. Configure: copy the example env file, then edit .env.local
+cp .env.example .env.local
+
+# 4. Run it
+npm run dev        # open http://localhost:3000
 ```
 
 With no Supabase configured it shows example data and the meal logger is in-memory only.
@@ -121,6 +143,14 @@ Salud lo alimenten.
 
 Esta guía es para personas **sin conocimientos técnicos**. Sin programar: crearás tres cuentas
 gratuitas, copiarás y pegarás unas cuantas veces, y pulsarás **Deploy**. Unos **15–20 minutos**.
+
+> **Dos formas de configurarlo:**
+> **(A) Sin programar — recomendado.** Sigue los pasos de abajo: copia el proyecto, crea la
+> base de datos y despliega desde el navegador. Nunca abres una terminal.
+> **(B) Desarrolladores (avanzado).** Ejecútalo en tu propio equipo — **requiere instalar
+> [Node.js](https://nodejs.org) y [Git](https://git-scm.com)** y clonar el repo primero.
+> Escribir `npm install` por sí solo no hace nada hasta haber hecho eso — ver
+> [*Para desarrolladores*](#para-desarrolladores--ejecutar-en-tu-ordenador-avanzado) al final.
 
 ### Qué necesitas (todo gratis)
 
@@ -202,13 +232,27 @@ El panel ya funciona sin esto. Para activar uno, añade sus variables en Vercel
 Pega la clave `service_role` y tus contraseñas **solo** en las Environment Variables de Vercel.
 Nunca en el código ni en sitios públicos. Tu copia del repo puede ser pública: no contiene secretos.
 
-### Para desarrolladores — ejecutar en tu ordenador (opcional)
+### Para desarrolladores — ejecutar en tu ordenador (avanzado)
 
-Requiere Node.js 18+. Copia `.env.example` a `.env.local` y rellénalo, luego:
+> No hace falta si usaste los pasos de Vercel de arriba. Esta vía es para desarrolladores. Los
+> comandos de abajo **solo funcionan tras** instalar los requisitos y clonar el repo — escribir
+> `npm install` por sí solo, sin Node.js y el proyecto clonado, no hace nada.
+
+**Requisitos:** instala [Node.js](https://nodejs.org) 18+ y [Git](https://git-scm.com).
 
 ```bash
+# 1. Clona TU fork (cambia YOUR-USERNAME) y entra en la carpeta
+git clone https://github.com/YOUR-USERNAME/personal-dashboard.git
+cd personal-dashboard
+
+# 2. Instala las dependencias (necesita Node.js de los requisitos)
 npm install
-npm run dev      # http://localhost:3000
+
+# 3. Configura: copia el archivo de ejemplo y luego edita .env.local
+cp .env.example .env.local
+
+# 4. Ejecútalo
+npm run dev        # abre http://localhost:3000
 ```
 
 Sin Supabase configurado muestra datos de ejemplo y el registro de comidas es solo en memoria.
