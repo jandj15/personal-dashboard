@@ -1,11 +1,11 @@
 # Personal Dashboard · D.A.V.I.D
 
-Single-screen "Personal OS" — one dark, fixed-width board aggregating a weekly calendar,
-prioritized tasks, inbox, Apple-Fitness-style movement rings, an editable nutrition / meal
-logger, and a day timeline. **Next.js 15 (App Router)** + **React 19** + **TypeScript**,
-backed by **Supabase** (server-side, service-role; locked RLS), behind a **password gate**,
-deployed to **Vercel**. Data flows in from **Google Calendar** (iCal), **Gmail** (IMAP),
-**Apple Health** (ingest endpoint), and a **Telegram** voice/text bot (Whisper → Claude).
+A private, single-screen "personal command center": your week's calendar, to-dos, inbox,
+activity rings, and nutrition on one dark board — that **you** host, for yourself. Optional
+extras let a Telegram voice note, your Google Calendar/Gmail, and Apple Health feed it.
+
+This guide is written for **non-technical** people. No coding — you'll create three free
+accounts, copy-paste a few times, and click **Deploy**. About **15–20 minutes**.
 
 **[🇬🇧 English](#english) · [🇪🇸 Español](#español)**
 
@@ -15,85 +15,98 @@ deployed to **Vercel**. Data flows in from **Google Calendar** (iCal), **Gmail**
 
 ## English
 
-### Tech stack
-Next.js App Router (SSR + Node API routes) · Supabase Postgres · Anthropic Claude (tool-use)
-· OpenAI Whisper (voice) · Vercel.
+### What you'll need (all free)
 
-### Quick start (local, no database)
+- A **GitHub** account — to keep your own copy of the project.
+- A **Supabase** account — the database that stores your data.
+- A **Vercel** account — hosts your website.
+
+You can sign into Supabase and Vercel *with* your GitHub account, so it's quick.
+
+### Step 1 — Get your own copy (GitHub)
+
+1. Open the project: **<https://github.com/imperiaAI/personal-dashboard>**
+2. Click **Fork** (top-right) → **Create fork**. You now have your own copy under your account.
+
+### Step 2 — Create the database (Supabase)
+
+1. Go to **[supabase.com](https://supabase.com)** → **New project**. Pick a name and a database
+   password (save it somewhere), choose the nearest region, and create it. Wait ~2 minutes.
+2. In the left sidebar open **SQL Editor** → **New query**.
+3. In your forked GitHub copy, open the folder **`supabase/migrations`**. There are 5 files
+   (`0001…` to `0005…`). **For each file, in order:** open it on GitHub, copy all the text,
+   paste it into the Supabase SQL editor, and click **Run**. Repeat for all 5.
+4. *(Optional)* Do the same once more with **`supabase/seed.sql`** to load example data.
+5. Left sidebar → **Project Settings → API**. Copy these two values (you'll paste them in Step 3):
+   - **Project URL** — looks like `https://abcd1234.supabase.co`
+   - **`service_role` key** — under *Project API keys*, click to reveal. **Keep this secret.**
+
+### Step 3 — Put it online (Vercel)
+
+**Easiest — one click.** This button copies the project and walks you through the settings:
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/imperiaAI/personal-dashboard&env=NEXT_PUBLIC_SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY,DASHBOARD_PASSWORD,AUTH_SECRET&envDescription=Supabase%20URL%20%2B%20service-role%20key%2C%20a%20login%20password%2C%20and%20a%20long%20random%20secret&project-name=personal-dashboard&repository-name=personal-dashboard)
+
+*(Or manually: [vercel.com](https://vercel.com) → **Add New → Project** → **Import** your forked repo.)*
+
+When Vercel asks for **Environment Variables**, add these **four**:
+
+| Name | What to paste |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | the **Project URL** from Step 2 |
+| `SUPABASE_SERVICE_ROLE_KEY` | the **service_role** key from Step 2 (secret) |
+| `DASHBOARD_PASSWORD` | any password you'll type to log in |
+| `AUTH_SECRET` | a long random string — 30+ characters (use a password generator, or just mash the keyboard) |
+
+Click **Deploy** and wait ~1–2 minutes.
+
+### Step 4 — Open it and log in
+
+1. Vercel shows your site address (ends in `.vercel.app`). Open it.
+2. Enter the **`DASHBOARD_PASSWORD`** you chose. You're in. ✅
+
+### Test that it works
+
+- **Nutrición** card → **+ Añadir**, type a food name and calories → reload the page; it's still
+  there (saved in your database).
+- **Tareas** card → click a task's checkbox → it gets marked done.
+- An empty calendar/inbox is normal until you connect Google (optional, below).
+
+### Optional add-ons
+
+The dashboard already works without these. To turn one on, add its Environment Variables in
+Vercel (**Project → Settings → Environment Variables**) and click **Redeploy**.
+
+| Add-on | What it does | Variables to add |
+|---|---|---|
+| **Telegram voice bot** | Talk/type to a bot to update the board | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `OWNER_TELEGRAM_CHAT_ID` — full guide in [`docs/PHASE2.md`](docs/PHASE2.md) |
+| **Apple Health** | Steps / activity from your iPhone | `MOVEMENT_INGEST_SECRET` + an iPhone Shortcut |
+| **Google Calendar** | Your real events | `GOOGLE_CALENDAR_ICS_URLS` (your calendar's "Secret address in iCal format") |
+| **Gmail** | Recent unread emails in the inbox card | `GMAIL_USER`, `GMAIL_APP_PASSWORD` (a Google *App Password*, not your login) |
+
+### If something looks off
+
+- **Only example data shows** → a Supabase variable is missing or mistyped. Re-check Step 3, then **Redeploy**.
+- **Page says "Auth not configured"** → `DASHBOARD_PASSWORD` or `AUTH_SECRET` isn't set. Add both, **Redeploy**.
+- **Calendar/inbox empty** → normal until you connect Google (optional).
+
+### Keep your secrets safe
+
+Only paste the `service_role` key and your passwords into **Vercel's Environment Variables**.
+Never put them in the code or anywhere public. Your forked repo can be public — it contains
+no secrets.
+
+### For developers — run on your own computer (optional)
+
+Requires Node.js 18+. Copy `.env.example` to `.env.local` and fill it in, then:
 
 ```bash
 npm install
-npm run dev
+npm run dev      # http://localhost:3000
 ```
 
-Open <http://localhost:3000> → log in (dev password **`dashboard`**, set in `.env.local`).
-With no Supabase configured the dashboard renders the bundled **seed data**; the meal logger
-works in-memory only. To run **ungated** locally, blank `DASHBOARD_PASSWORD` in `.env.local`.
-
-### Connect Supabase
-
-1. Create a project at [supabase.com](https://supabase.com).
-2. In the SQL editor run the migrations **in order** — `supabase/migrations/0001` … `0005` —
-   then optionally `supabase/seed.sql` for demo data. (CLI: `supabase db reset` after `supabase link`.)
-3. Put the keys in `.env.local` — only the URL + **service-role** key are needed:
-
-   ```bash
-   NEXT_PUBLIC_SUPABASE_URL=https://<ref>.supabase.co
-   SUPABASE_SERVICE_ROLE_KEY=<service role key>   # REQUIRED, server-only secret
-   ```
-4. Restart `npm run dev`. The browser **never** talks to Supabase directly — all reads/writes
-   go through cookie-gated server routes (`/api/data`, `/api/meals`, `/api/tasks`) using the
-   service-role key. The dashboard refreshes by polling (~20s) + on tab focus + after each sync.
-
-The data layer falls back to `lib/defaultData.ts` whenever the service-role key is missing or a
-query fails, so the UI always renders.
-
-### Security model
-
-- **Single user, one shared password.** No per-user auth.
-- **Locked RLS + service-role only.** `0005_lock_rls.sql` removes every permissive policy, so
-  the public anon key reads/writes **nothing**. All access is server-side with the service-role
-  key. Keep that key secret (server-only); the anon key is unused by the app.
-- **Production fails closed.** If `DASHBOARD_PASSWORD` or `AUTH_SECRET` is missing in production,
-  the app returns HTTP 503 instead of running open. Locally, blank them to run ungated.
-- **Auth.** HMAC-signed cookie (`pd_auth`, 30-day TTL), constant-time compares, best-effort
-  login rate-limit. Generate `AUTH_SECRET` with `openssl rand -hex 32`; use a strong password.
-- **CSRF.** State-changing POSTs are `SameSite=Lax` + same-origin checked.
-- **Secrets** live only in `.env.local` (gitignored) / Vercel env — never commit them.
-
-### Integrations (all optional)
-
-| Integration | Env vars | Notes |
-|---|---|---|
-| **Telegram bot** | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `OWNER_TELEGRAM_CHAT_ID`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` | Voice/text → Whisper → Claude tool-use → DB. Full setup in [`docs/PHASE2.md`](docs/PHASE2.md). |
-| **Apple Health** | `MOVEMENT_INGEST_SECRET` | An iPhone Shortcut POSTs today's metrics to `/api/movement` with header `x-ingest-secret`. Required in production. |
-| **Google Calendar** | `GOOGLE_CALENDAR_ICS_URLS` | One or more **private iCal** URLs (Calendar settings → "Secret address in iCal format"), comma-separated. |
-| **Gmail** | `GMAIL_USER`, `GMAIL_APP_PASSWORD` | Recent unread → inbox via IMAP. Needs 2FA + a Google **App Password** (not your login password). |
-
-### Deploy to Vercel
-
-1. Push to GitHub, import the repo in Vercel (Next.js auto-detected).
-2. Set environment variables (Project → Settings → Environment Variables):
-   - `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` — **required** (anon key not needed)
-   - `DASHBOARD_PASSWORD` (strong) + `AUTH_SECRET` (random) — **required in production**
-   - Integrations as needed (table above)
-3. **Deploy the code first**, then apply migrations `0001`…`0005` to Supabase. If you are
-   migrating an existing live deployment, apply `0005` only **after** the new code is live
-   (it locks RLS, which the old browser-anon code depended on).
-
-### Project layout
-
-```
-app/            page (SSR), /login, /api/{auth,data,meals,tasks,sync,movement,telegram}
-components/     Dashboard + TopBar + Greeting + cards/* (Calendar, Tasks, Inbox, Movement, Nutrition, TimeBar)
-lib/            types, defaultData, format, data (server load), supabase/server, auth, http,
-                claude, transcribe, syncCalendar, syncGmail, applyTools
-supabase/       migrations/0001…0005, seed.sql
-middleware.ts   password gate (fail-closed in prod)
-docs/PHASE2.md  Telegram + Whisper + Claude pipeline
-```
-
-The design's CSS lives verbatim in `app/globals.css`; components reproduce the mockup's DOM/classes and bind live data.
+With no Supabase configured it shows example data and the meal logger is in-memory only.
+Architecture/security notes are in [`docs/PHASE2.md`](docs/PHASE2.md) and the migration files.
 
 ---
 
@@ -101,96 +114,102 @@ The design's CSS lives verbatim in `app/globals.css`; components reproduce the m
 
 ## Español
 
-Panel personal de una sola pantalla ("Personal OS"): calendario semanal, tareas priorizadas,
-bandeja de entrada, anillos de actividad estilo Apple Fitness, registro de nutrición/comidas
-editable y una línea de tiempo del día. **Next.js 15 (App Router)** + **React 19** +
-**TypeScript**, con **Supabase** (en servidor, service-role; RLS bloqueada), tras una **contraseña**,
-desplegado en **Vercel**. Los datos entran desde **Google Calendar** (iCal), **Gmail** (IMAP),
-**Apple Salud** (endpoint de ingesta) y un bot de **Telegram** por voz/texto (Whisper → Claude).
+Un "centro de mando personal" privado de una sola pantalla: el calendario de tu semana, tareas,
+correo, anillos de actividad y nutrición en un único panel oscuro — que **tú** alojas, para ti.
+Extras opcionales permiten que una nota de voz de Telegram, tu Google Calendar/Gmail y Apple
+Salud lo alimenten.
 
-### Stack
-Next.js App Router (SSR + rutas API en Node) · Supabase Postgres · Anthropic Claude (tool-use)
-· OpenAI Whisper (voz) · Vercel.
+Esta guía es para personas **sin conocimientos técnicos**. Sin programar: crearás tres cuentas
+gratuitas, copiarás y pegarás unas cuantas veces, y pulsarás **Deploy**. Unos **15–20 minutos**.
 
-### Inicio rápido (local, sin base de datos)
+### Qué necesitas (todo gratis)
+
+- Una cuenta de **GitHub** — para guardar tu propia copia del proyecto.
+- Una cuenta de **Supabase** — la base de datos que guarda tus datos.
+- Una cuenta de **Vercel** — aloja tu web.
+
+Puedes entrar en Supabase y Vercel *con* tu cuenta de GitHub, así es más rápido.
+
+### Paso 1 — Consigue tu copia (GitHub)
+
+1. Abre el proyecto: **<https://github.com/imperiaAI/personal-dashboard>**
+2. Pulsa **Fork** (arriba a la derecha) → **Create fork**. Ya tienes tu copia en tu cuenta.
+
+### Paso 2 — Crea la base de datos (Supabase)
+
+1. Entra en **[supabase.com](https://supabase.com)** → **New project**. Elige un nombre y una
+   contraseña de base de datos (guárdala), la región más cercana, y créalo. Espera ~2 minutos.
+2. En la barra lateral abre **SQL Editor** → **New query**.
+3. En tu copia de GitHub, abre la carpeta **`supabase/migrations`**. Hay 5 archivos
+   (`0001…` a `0005…`). **Para cada archivo, en orden:** ábrelo en GitHub, copia todo el texto,
+   pégalo en el editor SQL de Supabase y pulsa **Run**. Repite con los 5.
+4. *(Opcional)* Haz lo mismo una vez más con **`supabase/seed.sql`** para cargar datos de ejemplo.
+5. Barra lateral → **Project Settings → API**. Copia estos dos valores (los pegarás en el Paso 3):
+   - **Project URL** — algo como `https://abcd1234.supabase.co`
+   - **clave `service_role`** — en *Project API keys*, pulsa para revelarla. **Mantenla en secreto.**
+
+### Paso 3 — Ponlo online (Vercel)
+
+**Lo más fácil — un clic.** Este botón copia el proyecto y te guía por los ajustes:
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/imperiaAI/personal-dashboard&env=NEXT_PUBLIC_SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY,DASHBOARD_PASSWORD,AUTH_SECRET&envDescription=URL%20de%20Supabase%20%2B%20clave%20service-role%2C%20una%20contrase%C3%B1a%20de%20acceso%20y%20un%20secreto%20aleatorio%20largo&project-name=personal-dashboard&repository-name=personal-dashboard)
+
+*(O manualmente: [vercel.com](https://vercel.com) → **Add New → Project** → **Import** tu repo.)*
+
+Cuando Vercel pida las **Environment Variables**, añade estas **cuatro**:
+
+| Nombre | Qué pegar |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | la **Project URL** del Paso 2 |
+| `SUPABASE_SERVICE_ROLE_KEY` | la clave **service_role** del Paso 2 (secreta) |
+| `DASHBOARD_PASSWORD` | la contraseña que escribirás para entrar |
+| `AUTH_SECRET` | una cadena aleatoria larga — 30+ caracteres (usa un generador o aporrea el teclado) |
+
+Pulsa **Deploy** y espera ~1–2 minutos.
+
+### Paso 4 — Ábrelo e inicia sesión
+
+1. Vercel te muestra la dirección de tu web (termina en `.vercel.app`). Ábrela.
+2. Escribe la **`DASHBOARD_PASSWORD`** que elegiste. Ya estás dentro. ✅
+
+### Comprueba que funciona
+
+- Tarjeta **Nutrición** → **+ Añadir**, escribe una comida y las calorías → recarga la página;
+  sigue ahí (guardada en tu base de datos).
+- Tarjeta **Tareas** → pulsa la casilla de una tarea → queda marcada como hecha.
+- Que el calendario/bandeja estén vacíos es normal hasta que conectes Google (opcional, abajo).
+
+### Extras opcionales
+
+El panel ya funciona sin esto. Para activar uno, añade sus variables en Vercel
+(**Project → Settings → Environment Variables**) y pulsa **Redeploy**.
+
+| Extra | Para qué sirve | Variables a añadir |
+|---|---|---|
+| **Bot de voz de Telegram** | Hablar/escribir a un bot para actualizar el panel | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `OWNER_TELEGRAM_CHAT_ID` — guía completa en [`docs/PHASE2.md`](docs/PHASE2.md) |
+| **Apple Salud** | Pasos / actividad desde tu iPhone | `MOVEMENT_INGEST_SECRET` + un Atajo de iPhone |
+| **Google Calendar** | Tus eventos reales | `GOOGLE_CALENDAR_ICS_URLS` ("Dirección secreta en formato iCal" de tu calendario) |
+| **Gmail** | Correos no leídos en la bandeja | `GMAIL_USER`, `GMAIL_APP_PASSWORD` (una *contraseña de aplicación* de Google, no la normal) |
+
+### Si algo se ve raro
+
+- **Solo aparecen datos de ejemplo** → falta o está mal una variable de Supabase. Revisa el Paso 3 y **Redeploy**.
+- **Pone "Auth not configured"** → falta `DASHBOARD_PASSWORD` o `AUTH_SECRET`. Añade ambas y **Redeploy**.
+- **Calendario/bandeja vacíos** → normal hasta que conectes Google (opcional).
+
+### Mantén tus secretos a salvo
+
+Pega la clave `service_role` y tus contraseñas **solo** en las Environment Variables de Vercel.
+Nunca en el código ni en sitios públicos. Tu copia del repo puede ser pública: no contiene secretos.
+
+### Para desarrolladores — ejecutar en tu ordenador (opcional)
+
+Requiere Node.js 18+. Copia `.env.example` a `.env.local` y rellénalo, luego:
 
 ```bash
 npm install
-npm run dev
+npm run dev      # http://localhost:3000
 ```
 
-Abre <http://localhost:3000> → inicia sesión (contraseña de desarrollo **`dashboard`**, en
-`.env.local`). Sin Supabase configurado, el panel muestra los **datos de ejemplo**; el registro
-de comidas funciona solo en memoria. Para ejecutarlo **sin contraseña** en local, deja vacío
-`DASHBOARD_PASSWORD` en `.env.local`.
-
-### Conectar Supabase
-
-1. Crea un proyecto en [supabase.com](https://supabase.com).
-2. En el editor SQL ejecuta las migraciones **en orden** — `supabase/migrations/0001` … `0005` —
-   y luego, opcionalmente, `supabase/seed.sql` para datos de ejemplo. (CLI: `supabase db reset`
-   tras `supabase link`.)
-3. Pon las claves en `.env.local` — solo se necesitan la URL + la clave **service-role**:
-
-   ```bash
-   NEXT_PUBLIC_SUPABASE_URL=https://<ref>.supabase.co
-   SUPABASE_SERVICE_ROLE_KEY=<clave service role>   # OBLIGATORIA, secreta y solo de servidor
-   ```
-4. Reinicia `npm run dev`. El navegador **nunca** habla con Supabase directamente: todas las
-   lecturas/escrituras pasan por rutas de servidor protegidas por cookie (`/api/data`,
-   `/api/meals`, `/api/tasks`) usando la clave service-role. El panel se actualiza por sondeo
-   (~20s) + al enfocar la pestaña + tras cada sincronización.
-
-La capa de datos recurre a `lib/defaultData.ts` si falta la clave service-role o falla una
-consulta, así la interfaz siempre se renderiza.
-
-### Modelo de seguridad
-
-- **Un solo usuario, una contraseña compartida.** Sin autenticación por usuario.
-- **RLS bloqueada + solo service-role.** `0005_lock_rls.sql` elimina toda política permisiva,
-  así la clave anónima pública **no lee ni escribe nada**. Todo el acceso es de servidor con la
-  clave service-role. Mantén esa clave en secreto; la app no usa la clave anónima.
-- **En producción falla en cerrado.** Si falta `DASHBOARD_PASSWORD` o `AUTH_SECRET` en
-  producción, la app devuelve HTTP 503 en vez de quedar abierta. En local, déjalas vacías para
-  ejecutar sin contraseña.
-- **Autenticación.** Cookie firmada con HMAC (`pd_auth`, 30 días), comparaciones de tiempo
-  constante, límite de intentos de login (best-effort). Genera `AUTH_SECRET` con
-  `openssl rand -hex 32`; usa una contraseña fuerte.
-- **CSRF.** Los POST que modifican datos son `SameSite=Lax` + verificación de mismo origen.
-- **Los secretos** viven solo en `.env.local` (ignorado por git) / variables de Vercel — nunca
-  los subas al repositorio.
-
-### Integraciones (todas opcionales)
-
-| Integración | Variables de entorno | Notas |
-|---|---|---|
-| **Bot de Telegram** | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `OWNER_TELEGRAM_CHAT_ID`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` | Voz/texto → Whisper → Claude (tool-use) → BD. Guía completa en [`docs/PHASE2.md`](docs/PHASE2.md). |
-| **Apple Salud** | `MOVEMENT_INGEST_SECRET` | Un Atajo de iPhone envía las métricas del día por POST a `/api/movement` con la cabecera `x-ingest-secret`. Obligatoria en producción. |
-| **Google Calendar** | `GOOGLE_CALENDAR_ICS_URLS` | Una o varias URL **iCal privadas** (Ajustes del calendario → "Dirección secreta en formato iCal"), separadas por comas. |
-| **Gmail** | `GMAIL_USER`, `GMAIL_APP_PASSWORD` | Correos no leídos recientes → bandeja vía IMAP. Requiere 2FA + una **contraseña de aplicación** de Google (no tu contraseña normal). |
-
-### Desplegar en Vercel
-
-1. Sube a GitHub e importa el repo en Vercel (detecta Next.js automáticamente).
-2. Configura las variables de entorno (Proyecto → Settings → Environment Variables):
-   - `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` — **obligatorias** (la anónima no hace falta)
-   - `DASHBOARD_PASSWORD` (fuerte) + `AUTH_SECRET` (aleatoria) — **obligatorias en producción**
-   - Integraciones según necesites (tabla anterior)
-3. **Despliega el código primero** y luego aplica las migraciones `0001`…`0005` en Supabase. Si
-   migras un despliegue ya en producción, aplica `0005` **solo después** de que el nuevo código
-   esté activo (bloquea la RLS, de la que dependía el código antiguo basado en la clave anónima).
-
-### Estructura del proyecto
-
-```
-app/            página (SSR), /login, /api/{auth,data,meals,tasks,sync,movement,telegram}
-components/     Dashboard + TopBar + Greeting + cards/* (Calendar, Tasks, Inbox, Movement, Nutrition, TimeBar)
-lib/            types, defaultData, format, data (carga en servidor), supabase/server, auth, http,
-                claude, transcribe, syncCalendar, syncGmail, applyTools
-supabase/       migrations/0001…0005, seed.sql
-middleware.ts   contraseña (falla en cerrado en producción)
-docs/PHASE2.md  pipeline de Telegram + Whisper + Claude
-```
-
-El CSS del diseño está literal en `app/globals.css`; los componentes reproducen el DOM/clases
-del mockup y enlazan datos en vivo.
+Sin Supabase configurado muestra datos de ejemplo y el registro de comidas es solo en memoria.
+Notas de arquitectura/seguridad en [`docs/PHASE2.md`](docs/PHASE2.md) y en los archivos de migración.
