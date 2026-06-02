@@ -80,7 +80,7 @@ Vercel (**Project → Settings → Environment Variables**) and click **Redeploy
 | Add-on | What it does | Variables to add |
 |---|---|---|
 | **Telegram voice bot** | Talk/type to a bot to update the board | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `OWNER_TELEGRAM_CHAT_ID` — full guide in [`docs/PHASE2.md`](docs/PHASE2.md) |
-| **Apple Health** | Steps / activity from your iPhone | `MOVEMENT_INGEST_SECRET` + an iPhone Shortcut |
+| **Apple Health** | Steps / activity from your iPhone | `MOVEMENT_INGEST_SECRET` + an iPhone Shortcut — step-by-step in [`docs/apple-health.md`](docs/apple-health.md) |
 | **Google Calendar** | Your real events | `GOOGLE_CALENDAR_ICS_URLS` (your calendar's "Secret address in iCal format") |
 | **Gmail** | Recent unread emails in the inbox card | `GMAIL_USER`, `GMAIL_APP_PASSWORD` (a Google *App Password*, not your login) |
 
@@ -187,7 +187,7 @@ El panel ya funciona sin esto. Para activar uno, añade sus variables en Vercel
 | Extra | Para qué sirve | Variables a añadir |
 |---|---|---|
 | **Bot de voz de Telegram** | Hablar/escribir a un bot para actualizar el panel | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `OWNER_TELEGRAM_CHAT_ID` — guía completa en [`docs/PHASE2.md`](docs/PHASE2.md) |
-| **Apple Salud** | Pasos / actividad desde tu iPhone | `MOVEMENT_INGEST_SECRET` + un Atajo de iPhone |
+| **Apple Salud** | Pasos / actividad desde tu iPhone | `MOVEMENT_INGEST_SECRET` + un Atajo de iPhone — paso a paso en [`docs/apple-health.md`](docs/apple-health.md) |
 | **Google Calendar** | Tus eventos reales | `GOOGLE_CALENDAR_ICS_URLS` ("Dirección secreta en formato iCal" de tu calendario) |
 | **Gmail** | Correos no leídos en la bandeja | `GMAIL_USER`, `GMAIL_APP_PASSWORD` (una *contraseña de aplicación* de Google, no la normal) |
 
