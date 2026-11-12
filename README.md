@@ -41,9 +41,9 @@ You can sign into Supabase and Vercel *with* your GitHub account, so it's quick.
 1. Go to **[supabase.com](https://supabase.com)** → **New project**. Pick a name and a database
    password (save it somewhere), choose the nearest region, and create it. Wait ~2 minutes.
 2. In the left sidebar open **SQL Editor** → **New query**.
-3. In your forked GitHub copy, open the folder **`supabase/migrations`**. There are 5 files
-   (`0001…` to `0005…`). **For each file, in order:** open it on GitHub, copy all the text,
-   paste it into the Supabase SQL editor, and click **Run**. Repeat for all 5.
+3. In your forked GitHub copy, open the folder **`supabase/migrations`**. There are 6 files
+   (`0001…` to `0006…`). **For each file, in order:** open it on GitHub, copy all the text,
+   paste it into the Supabase SQL editor, and click **Run**. Repeat for all 6.
 4. *(Optional)* Do the same once more with **`supabase/seed.sql`** to load example data.
 5. Left sidebar → **Project Settings → API**. Copy these two values (you'll paste them in Step 3):
    - **Project URL** — looks like `https://abcd1234.supabase.co`
@@ -170,9 +170,9 @@ Puedes entrar en Supabase y Vercel *con* tu cuenta de GitHub, así es más rápi
 1. Entra en **[supabase.com](https://supabase.com)** → **New project**. Elige un nombre y una
    contraseña de base de datos (guárdala), la región más cercana, y créalo. Espera ~2 minutos.
 2. En la barra lateral abre **SQL Editor** → **New query**.
-3. En tu copia de GitHub, abre la carpeta **`supabase/migrations`**. Hay 5 archivos
-   (`0001…` a `0005…`). **Para cada archivo, en orden:** ábrelo en GitHub, copia todo el texto,
-   pégalo en el editor SQL de Supabase y pulsa **Run**. Repite con los 5.
+3. En tu copia de GitHub, abre la carpeta **`supabase/migrations`**. Hay 6 archivos
+   (`0001…` a `0006…`). **Para cada archivo, en orden:** ábrelo en GitHub, copia todo el texto,
+   pégalo en el editor SQL de Supabase y pulsa **Run**. Repite con los 6.
 4. *(Opcional)* Haz lo mismo una vez más con **`supabase/seed.sql`** para cargar datos de ejemplo.
 5. Barra lateral → **Project Settings → API**. Copia estos dos valores (los pegarás en el Paso 3):
    - **Project URL** — algo como `https://abcd1234.supabase.co`

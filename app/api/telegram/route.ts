@@ -5,8 +5,31 @@ import { transcribe } from "@/lib/transcribe";
 import { applyTool } from "@/lib/applyTools";
 import { fmtLongDate } from "@/lib/format";
 import { safeEqual } from "@/lib/auth";
+import { loadHistory, saveMessage, clearHistory, loadFacts } from "@/lib/botMemory";
 
 export const runtime = "nodejs";
+// Claude may call several tools per message; give the function time to finish.
+export const maxDuration = 60;
+
+const TG_MAX_LEN = 4096; // Telegram's message length limit
+
+async function reply(chatId: number, text: string) {
+  for (let i = 0; i < text.length || i === 0; i += TG_MAX_LEN) {
+    await tg("sendMessage", { chat_id: chatId, text: text.slice(i, i + TG_MAX_LEN) });
+  }
+}
+
+const HELP = `¡Hola! Soy tu asistente. Puedes escribirme o mandarme notas de voz.
+
+Ejemplos:
+• "añade tarea urgente: llamar al banco mañana"
+• "¿qué tengo hoy?"
+• "apunta la cena: pollo con arroz"
+• "recuerda que soy alérgico a los frutos secos"
+• o pregúntame lo que quieras
+
+Comandos:
+/olvidar — borra la conversación reciente (no los datos recordados)`;
 
 const TG = "https://api.telegram.org";
 
@@ -80,15 +103,34 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    // 4. Claude interprets → applies tools to Supabase → dashboard picks it up on poll/focus.
+    // Commands.
+    const cmd = text.split(/\s|@/)[0].toLowerCase();
+    if (cmd === "/start" || cmd === "/ayuda" || cmd === "/help") {
+      await reply(chatId, HELP);
+      return NextResponse.json({ ok: true });
+    }
+    if (cmd === "/olvidar" || cmd === "/reset") {
+      await clearHistory(sb, chatId);
+      await reply(chatId, "Listo, empiezo una conversación nueva. 🧹");
+      return NextResponse.json({ ok: true });
+    }
+
+    // Tell the user we're working on it (voice + several tools can take a while).
+    await tg("sendChatAction", { chat_id: chatId, action: "typing" });
+
+    // 4. Claude interprets (with recent conversation + remembered facts) → applies
+    //    tools to Supabase → dashboard picks it up on poll/focus.
+    const [history, facts] = await Promise.all([loadHistory(sb, chatId), loadFacts(sb)]);
     const dateStr = fmtLongDate(new Date());
-    const { reply } = await interpret(
+    const result = await interpret(
       text,
       (name, input) => applyTool(sb, name, input),
-      { dateStr }
+      { dateStr, history, facts }
     );
 
-    await tg("sendMessage", { chat_id: chatId, text: reply });
+    await saveMessage(sb, chatId, "user", text);
+    await saveMessage(sb, chatId, "assistant", result.reply);
+    await reply(chatId, result.reply);
     return NextResponse.json({ ok: true });
   } catch (e) {
     await tg("sendMessage", {

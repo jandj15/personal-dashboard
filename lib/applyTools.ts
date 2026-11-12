@@ -163,6 +163,79 @@ export async function applyTool(
       return `actividad actualizada: ${Object.keys(fields).join(", ")}`;
     }
 
+    // ---------- consultas (solo lectura) ----------
+    case "list_tasks": {
+      const includeDone = Boolean(input.include_done);
+      let q = sb.from("tasks").select("title,tag,priority,due_label,done").order("sort_order");
+      if (!includeDone) q = q.eq("done", false);
+      const { data, error } = await q.limit(50);
+      if (error) throw new Error(error.message);
+      if (!data?.length) return "no hay tareas";
+      return data
+        .map((t) => `- ${t.done ? "[hecha] " : ""}${t.title} (${t.priority}${t.tag ? ", " + t.tag : ""}, ${t.due_label})`)
+        .join("\n");
+    }
+
+    case "list_events": {
+      const { data, error } = await sb
+        .from("events")
+        .select("title,type,day_offset,start_time,end_time,location")
+        .order("day_offset")
+        .order("start_time")
+        .limit(50);
+      if (error) throw new Error(error.message);
+      if (!data?.length) return "no hay eventos";
+      return data
+        .map((e) => {
+          const day = e.day_offset === 0 ? "hoy" : e.day_offset === 1 ? "mañana" : `día +${e.day_offset}`;
+          const end = e.end_time ? `–${e.end_time}` : "";
+          const loc = e.location ? ` @ ${e.location}` : "";
+          return `- ${day} ${e.start_time}${end}: ${e.title}${loc}`;
+        })
+        .join("\n");
+    }
+
+    case "get_today_summary": {
+      const day = todayInTz();
+      const [meals, log, move, goals] = await Promise.all([
+        sb.from("meals").select("meal_type,name,kcal").eq("logged_on", day).order("sort_order"),
+        sb.from("nutrition_log").select("protein_g,carbs_g,fat_g,water_l").eq("day", day).maybeSingle(),
+        sb.from("movement").select("*").eq("day", day).maybeSingle(),
+        sb.from("nutrition").select("kcal_goal,protein_goal,carbs_goal,fat_goal,water_goal_l").eq("id", "default").maybeSingle(),
+      ]);
+      const kcal = (meals.data ?? []).reduce((a, m) => a + Number(m.kcal ?? 0), 0);
+      return JSON.stringify({
+        fecha: day,
+        comidas: meals.data ?? [],
+        kcal_total: kcal,
+        macros_y_agua: log.data ?? {},
+        objetivos: goals.data ?? {},
+        actividad: move.data ?? {},
+      });
+    }
+
+    // ---------- memoria a largo plazo ----------
+    case "remember_fact": {
+      const fact = String(input.fact ?? "").trim();
+      if (!fact) return "nada que recordar";
+      const { error } = await sb.from("bot_facts").insert({ fact });
+      if (error) throw new Error(error.message);
+      return `recordado: ${fact}`;
+    }
+
+    case "forget_fact": {
+      const q = String(input.fact_query ?? "").trim();
+      if (!q) return "no indicaste qué olvidar";
+      const { data, error } = await sb
+        .from("bot_facts")
+        .delete()
+        .ilike("fact", `%${q}%`)
+        .select("fact");
+      if (error) throw new Error(error.message);
+      if (!data?.length) return `no encontré nada recordado que coincida con "${q}"`;
+      return `olvidado: ${data.map((d) => d.fact).join("; ")}`;
+    }
+
     default:
       return `herramienta desconocida: ${name}`;
   }

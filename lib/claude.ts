@@ -110,21 +110,83 @@ export const DASHBOARD_TOOLS: DashboardTool[] = [
       },
     },
   },
+  {
+    name: "list_tasks",
+    description:
+      "Read the user's tasks from the dashboard. Use it to answer questions like " +
+      '"¿qué tengo pendiente?" or before completing a task whose name is unclear.',
+    input_schema: {
+      type: "object",
+      properties: {
+        include_done: { type: "boolean", description: "Also list completed tasks." },
+      },
+    },
+  },
+  {
+    name: "list_events",
+    description:
+      "Read upcoming calendar events (today, tomorrow, …). Use it for questions " +
+      'like "¿qué tengo hoy/mañana?" or "¿cuándo es la reunión con X?".',
+    input_schema: { type: "object", properties: {} },
+  },
+  {
+    name: "get_today_summary",
+    description:
+      "Read today's meals, calories, macros, water and activity, plus the user's goals. " +
+      'Use it for questions like "¿cuántas calorías llevo?" or "¿cómo voy hoy?".',
+    input_schema: { type: "object", properties: {} },
+  },
+  {
+    name: "remember_fact",
+    description:
+      "Save a durable fact about the user to long-term memory (preferences, people, " +
+      "routines, goals). Use when the user says \"recuerda que…\" or shares something " +
+      "clearly worth keeping for future conversations. One short sentence per fact.",
+    input_schema: {
+      type: "object",
+      properties: { fact: { type: "string" } },
+      required: ["fact"],
+    },
+  },
+  {
+    name: "forget_fact",
+    description: "Delete facts from long-term memory that match the text (fuzzy).",
+    input_schema: {
+      type: "object",
+      properties: { fact_query: { type: "string" } },
+      required: ["fact_query"],
+    },
+  },
 ];
 
-const SYSTEM = `Eres el asistente de un panel personal ("D.A.V.I.D"). El usuario te envía
-mensajes de voz o texto en español para modificar su panel: tareas, eventos de
-calendario, comidas/nutrición, agua y actividad física.
+const SYSTEM = `Eres el asistente personal del usuario, conectado a su panel personal
+("D.A.V.I.D"). Te escribe o te manda notas de voz por Telegram, normalmente en español.
 
-Interpreta el mensaje y usa las herramientas disponibles para aplicar los cambios.
-Reglas:
+Puedes hacer dos cosas:
+1. Gestionar su panel con las herramientas: tareas, eventos de calendario,
+   comidas/nutrición, agua y actividad física. También puedes CONSULTARLO
+   (list_tasks, list_events, get_today_summary) para responder preguntas sobre su día.
+2. Conversar y ayudar en general: responder preguntas, dar ideas, redactar textos,
+   hacer cálculos, aconsejar… como un buen asistente personal.
+
+Memoria:
+- Ves los mensajes recientes de la conversación; úsalos para entender referencias
+  como "ponla para mañana" o "la otra".
+- Al final del último mensaje recibes "Datos recordados": cosas que el usuario te pidió
+  recordar. Tenlas en cuenta. Guarda datos nuevos con remember_fact y bórralos con
+  forget_fact cuando te lo pida.
+
+Reglas para el panel:
 - Usa la herramienta adecuada para cada acción. Puedes llamar varias en un turno.
 - Para fechas relativas usa day_offset (0 hoy, 1 mañana, …).
 - Al registrar una comida (log_meal), estima siempre sus macros en gramos (proteínas,
   carbohidratos, grasas) a partir de los alimentos; se suman al total del día.
 - Si el usuario no da prioridad de tarea, usa "normal" y featured=true si parece importante.
-- Si el mensaje no implica ningún cambio, responde brevemente sin usar herramientas.
-- Tras aplicar los cambios, responde en español de forma muy breve confirmando qué hiciste.`;
+- Si no estás seguro de qué tarea quiere completar, consulta primero con list_tasks.
+
+Estilo: responde en el idioma del usuario, de forma breve y natural, como en un chat.
+Tras cambiar algo en el panel, confirma en una frase qué hiciste. Texto plano, sin
+Markdown (Telegram lo muestra tal cual).`;
 
 export type ExecuteTool = (
   name: string,
@@ -139,13 +201,15 @@ export interface ClaudeResult {
 export async function interpret(
   transcript: string,
   executeTool: ExecuteTool,
-  opts: { dateStr?: string } = {}
+  opts: { dateStr?: string; history?: Anthropic.MessageParam[]; facts?: string[] } = {}
 ): Promise<ClaudeResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY not set");
 
   const client = new Anthropic({ apiKey });
-  const model = process.env.CLAUDE_MODEL || "claude-sonnet-4-6";
+  const model = process.env.CLAUDE_MODEL || "claude-opus-5-5";
+  const effort = (process.env.CLAUDE_EFFORT || "medium") as
+    "low" | "medium" | "high" | "xhigh" | "max";
 
   // Static prefix (tools + system) cached; volatile transcript after the breakpoint.
   const tools = DASHBOARD_TOOLS.map((t, i) => ({
@@ -160,19 +224,26 @@ export async function interpret(
     { type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } },
   ];
 
+  // Volatile context (date, remembered facts) goes in the newest user turn, after
+  // the cached prefix, so it never invalidates the cache.
   const context = opts.dateStr ? `[Hoy es ${opts.dateStr}] ` : "";
+  const facts = opts.facts?.length
+    ? `\n\n[Datos recordados:\n${opts.facts.map((f) => `- ${f}`).join("\n")}]`
+    : "";
   const messages: Anthropic.MessageParam[] = [
-    { role: "user", content: `${context}${transcript}` },
+    ...(opts.history ?? []),
+    { role: "user", content: `${context}${transcript}${facts}` },
   ];
 
   const toolCalls: ClaudeResult["toolCalls"] = [];
   let reply = "";
 
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 8; i++) {
     const res = await client.messages.create({
       model,
-      max_tokens: 4096,
+      max_tokens: 16000,
       thinking: { type: "adaptive" },
+      output_config: { effort },
       system,
       tools,
       messages,
@@ -185,6 +256,10 @@ export async function interpret(
       .trim();
     if (text) reply = text;
 
+    if (res.stop_reason === "refusal") {
+      reply = "Lo siento, no puedo ayudarte con eso.";
+      break;
+    }
     if (res.stop_reason !== "tool_use") break;
 
     messages.push({ role: "assistant", content: res.content });

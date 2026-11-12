@@ -33,7 +33,7 @@ sync, so bot changes appear within a few seconds (no Realtime, no manual refresh
 
 - `app/api/telegram/route.ts` — webhook (nodejs runtime), guards, voice download, orchestration.
 - `lib/transcribe.ts` — OpenAI Whisper (`whisper-1`, `language: "es"`).
-- `lib/claude.ts` — `interpret()` manual tool-use loop, model `claude-sonnet-4-6` (adaptive
+- `lib/claude.ts` — `interpret()` manual tool-use loop, model `claude-opus-5-5` (adaptive
   thinking, system+tools prompt-cached). Override with `CLAUDE_MODEL`.
 - `lib/applyTools.ts` — tool → Supabase write mapping.
 
@@ -48,7 +48,8 @@ sync, so bot changes appear within a few seconds (no Realtime, no manual refresh
    TELEGRAM_BOT_TOKEN=...
    TELEGRAM_WEBHOOK_SECRET=<random string>
    OWNER_TELEGRAM_CHAT_ID=<your chat id>
-   # CLAUDE_MODEL=claude-opus-4-8   (optional)
+   # CLAUDE_MODEL=claude-opus-5-5   (optional, this is the default)
+   # CLAUDE_EFFORT=medium            (optional: low | medium | high)
    ```
    Plus the Supabase keys (incl. `SUPABASE_SERVICE_ROLE_KEY` — the webhook writes with it).
 4. Find your chat id: message the bot, then GET `https://api.telegram.org/bot<token>/getUpdates`.
@@ -84,3 +85,20 @@ sync, so bot changes appear within a few seconds (no Realtime, no manual refresh
 
 Daily tables (`meals.logged_on`, `movement.day`, `nutrition_log.day`) are scoped to
 today in `APP_TZ` (Europe/Madrid) and reset at local midnight; goals stay constant.
+
+## Assistant mode: memory + questions (migration 0006)
+
+The bot is a general personal assistant, not only a dashboard editor:
+
+- **Short-term memory** — the last `BOT_HISTORY_LIMIT` (20) messages from the last
+  `BOT_HISTORY_HOURS` (24) hours are replayed, so follow-ups like *"ponla para mañana"*
+  work. `/olvidar` (or `/reset`) clears it. Table `bot_messages`.
+- **Long-term memory** — *"recuerda que…"* → `remember_fact`; *"olvida que…"* →
+  `forget_fact`. Facts are sent with every message. Table `bot_facts`.
+- **Read tools** — `list_tasks`, `list_events`, `get_today_summary` answer
+  *"¿qué tengo hoy?"*, *"¿cuántas calorías llevo?"*.
+- **General chat** — questions, ideas and drafts get a normal answer.
+- `/start` or `/ayuda` shows a help message.
+
+Apply `supabase/migrations/0006_bot_memory.sql` before using it; without it the bot still
+answers but has no memory.
