@@ -19,4 +19,7 @@ yarn-error.log*
 next-env.d.ts
 
 # local harness config
-.claude/
+.claude/*
+!.claude/settings.json
+!.claude/skills/
+!.claude/agents/
